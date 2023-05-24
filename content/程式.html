@@ -197,8 +197,67 @@ while True:
 # Stop the simulation
 sim.stopSimulation()
 </pre>
-<p><a href="./../downloads/snail.7z">第一版程式與機器人</a></p>
-<br />pj3 << <a href='pj3.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔</div>
+<p><a href="./../downloads/snail.7z">第一版程式與四輪車</a></p>
+<p>第二版程式，前輪各多加一個joint，使其運動更加合理</p>
+<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">from zmqRemoteApi_IPv6 import RemoteAPIClient
+import keyboard
+
+client = RemoteAPIClient('localhost', 23000)
+
+sim = client.getObject('sim')
+
+sim.startSimulation()
+
+frontLeftSteeringJoint = sim.getObject('/frontLeftJoint1')
+frontRightSteeringJoint = sim.getObject('/frontRightJoint1')
+frontLeftWheel = sim.getObject('/frontLeftJoint2')
+frontRightWheel = sim.getObject('/frontRightJoint2')
+rearLeftWheel = sim.getObject('/rearLeftJoint')
+rearRightWheel = sim.getObject('/rearRightJoint')
+
+def setFrontWheelSteeringAngle(steeringAngle):
+    sim.setJointTargetPosition(frontLeftSteeringJoint, steeringAngle)
+    sim.setJointTargetPosition(frontRightSteeringJoint, steeringAngle)
+
+def setAllWheelSpeed(speed):
+    sim.setJointTargetVelocity(frontLeftWheel, speed)
+    sim.setJointTargetVelocity(frontRightWheel, speed)
+    sim.setJointTargetVelocity(rearLeftWheel, speed)
+    sim.setJointTargetVelocity(rearRightWheel, speed)
+
+steeringAngle = 0
+speed = 0
+
+SPEED_FORWARD = -20
+SPEED_BACKWARD = 20
+STEERING_ANGLE_LEFT = 0.3
+STEERING_ANGLE_RIGHT = -0.3
+
+while True:
+    if keyboard.is_pressed('w'):
+        speed = SPEED_FORWARD
+    elif keyboard.is_pressed('s'):
+        speed = SPEED_BACKWARD
+    else:
+        speed = 0
+
+    if keyboard.is_pressed('a'):
+        steeringAngle = STEERING_ANGLE_LEFT
+    elif keyboard.is_pressed('d'):
+        steeringAngle = STEERING_ANGLE_RIGHT
+    else:
+        steeringAngle = 0
+
+    if keyboard.is_pressed('q'):
+        break  
+
+    setFrontWheelSteeringAngle(steeringAngle)
+    
+    setAllWheelSpeed(speed)
+
+sim.stopSimulation()
+</pre>
+<p><a href="./../downloads/Dichoplasma.7z">第二版程式與四輪車</a></p><br />pj3 << <a href='pj3.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔</div>
         
     <!-- footer -->
       <div class="container">
