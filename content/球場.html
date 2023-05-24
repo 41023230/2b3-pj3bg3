@@ -2,7 +2,7 @@
         <head>
         <title>pj3bg3</title>
         <meta charset="utf-8">
-<meta property="head" content="H1">
+<meta property="head" content="H3">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
         <link href="https://fonts.googleapis.com/css?family=Quicksand:300,400,500,700,900" rel="stylesheet">
         <link rel="stylesheet" href="./../cmsimde/static/chimper/fonts/icomoon/style.css">
@@ -141,96 +141,8 @@ img.add_border {
           </div>
           
         </header>
-    <div id="tipue_search_content">About << <a href='About.html'>Previous</a> <a href='程式.html'>Next</a> >> 程式<br /><h1>pj3</h1>
-<p>專案三: 接續專案二, 各組需<span>對雙輪車進行設計改良,  以提升行進與對戰效能</span>, 各組需採 CAD 進行場景與多輪車零組件設計後, 轉入足球場景中<span>以鍵盤 arrow keys 與 wzas 等按鍵進行控制</span>, 對陣雙方每組將有<span>四名輪車球員</span>, 且每兩人在同一台電腦上操作, 完成後各組需在分組網站中提供所有相關檔案<span>下載連結</span>, 且提供<span>線上分組簡報</span>與<span>分組 pdf 報告</span>連結.</p>
-<p><strong>球賽計分系統必須採 .ttm 格式建立 (0~99), 使能通用於各類場景計數之用, 並可擴增至三位數計分.</strong></p>
-<p>除了採用 LED 顯示計分外, 請另外以建立以<strong>機械轉盤傳動計分系統</strong><span> </span>(<a href="https://www.google.com/search?q=mechaincal+counter+design">mechanical counter</a>), 且採 .ttm 格式建立.</p>
-<p>協同產品設計規格:</p>
-<p><span>足球規格 (ball): 白色, 直徑 0.1m, 重量 0.5kg</span></p>
-<p><span>足球場地 (field): 長 4m x 寬 2.5m</span></p>
-<p><span>球門規格 (goal[0] and goal[1]: 長 0.6m, 高 0.3m, 寬 0.1m</span></p>
-<p><span>球員尺寸範圍(player[0]-player[7]: 長寬高各 0.2m, 重量 5kg</span></p>
-<p><span></span></p>
-<p><span>應交付內容:</span></p>
-<p>專案三場景與多輪車零組件設計 (可使用各種 CAD 系統建立, 但必須提供完整的檔案下載連結)</p>
-<p>專案三控制程式 (以 zmqRemoteAPI Python 製作)</p>
-<p>專案三開會紀錄與逐字稿 (可利用 jit.si 或 OBS 或其他線上開會系統)</p>
-<p>專案三各組員任務分配與執行過程影片 (可置於 Youtube 或 Onedrive)</p>
-<p>專案三網站包括所有協同設計流程所衍生的檔案下載連結, 各檔案必須設法壓縮在 30 MB 內並置於網站downloads 目錄中.</p>
-<p>專案三線上簡報檔案</p>
-<p>專案三分組報告 pdf 檔案</p>
-<p><span>直接利用 zmqRemoteAPI Python 程式建立場景物件:</span></p>
-<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false"># zmqRemoteApi_IPv6 為將 zmq 通訊協定修改為 IPv4 與 IPv6 相容
-from zmqRemoteApi_IPv6 import RemoteAPIClient
-import time
-import math
-import keyboard
-
-# 利用 zmqRemoteAPI 以 23000 對場景伺服器進行連線
-client = RemoteAPIClient('localhost', 23000)
-# 以 getObject 方法取得場景物件
-sim = client.getObject('sim')
-box = sim.getObject('/box')
-
-# 啟動模擬
-sim.startSimulation()
-# 建立尺寸數列, 分別定義 x, y, z 方向尺寸
-x = 0.2
-y = 0.2
-z = 0.1
-size = [x, y, z]
-
-# 利用 size 數列, 建立圓柱物件, 2 代表 cylinder
-# 8 表示 respondable, 1 為 質量
-digit1_handle = sim.createPureShape(2, 8, size, 1, None)
-# 將圓柱物件命名為 digit1, 若用於機械計分可做為個位數轉盤
-# 之後可再導入帶有數字組立的外型零件
-sim.setObjectAlias(digit1_handle, 'digit1')
-# 轉角單位為徑度
-sim.setObjectOrientation(digit1_handle, -1, [0, math.pi/2, 0])
-# 起始物件中心位於 [0, 0, 0], 為了位於地板, 往 z 提升一個半徑高度
-sim.setObjectPosition(digit1_handle, -1, [0, 0, x/2])
-
-# 建立 revolute joint 命名為 joint, 且將 joint mode 設為 dynamic, control mode 設為 velocity
-joint1_handle = sim.createJoint(sim.joint_revolute_subtype, sim.jointmode_dynamic, 0, None)
-sim.setObjectInt32Param(joint1_handle, sim.jointintparam_dynctrlmode, sim.jointdynctrl_velocity)
-sim.setObjectAlias(joint1_handle, 'joint1')
-
-# 取得 cylinder 的位置座標
-digit1_pos = sim.getObjectPosition(digit1_handle, -1)
-joint1_pos = [digit1_pos[0], digit1_pos[1], digit1_pos[2]]
-
-# 將 joint1 至於 cylinder 中心
-sim.setObjectPosition(joint1_handle, -1, joint1_pos)
-# 取得 digit1_handle 的方位
-digit1_ori = sim.getObjectOrientation(digit1_handle, -1)
-# 將 joint1_handle 方位與 digit1 對齊
-sim.setObjectOrientation(joint1_handle, -1, digit1_ori)
-
-# 將 joint1 置於 box 上
-sim.setObjectParent(joint1_handle, box, True)
-# 將 cylinder 置於 joint1 上
-sim.setObjectParent(digit1_handle, joint1_handle, True)
-
-# 鎖定 joint1
-sim.setJointForce(joint1_handle, float('inf'))
-
-print("基本場景建立完成!")
-
-# 設定主迴圈
-while True:
-    # 設定 joint1 目標速度
-    sim.setJointTargetVelocity(joint1_handle, 10)
-    # 讓 coppeliasim 有時間按照設定讓 joint1 旋轉
-    time.sleep(0.01) 
-
-    if keyboard.is_pressed('q'):
-        # 可以按下 q 鍵跳出重複執行迴圈
-        break
-
-# 終止模擬
-#sim.stopSimulation()</pre>
-<br />About << <a href='About.html'>Previous</a> <a href='程式.html'>Next</a> >> 程式</div>
+    <div id="tipue_search_content">機器人 << <a href='機器人.html'>Previous</a> <a href='記分板.html'>Next</a> >> 記分板<br /><h1>球場</h1>
+<br />機器人 << <a href='機器人.html'>Previous</a> <a href='記分板.html'>Next</a> >> 記分板</div>
         
     <!-- footer -->
       <div class="container">
