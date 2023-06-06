@@ -130,7 +130,7 @@ img.add_border {
                             <li><a href="./../blog/index.html">blog</a></li>
                         </ul>
                       </li>
-                     <li><a href='About.html'>About</a><li class='has-children'><a href='pj3.html'>pj3</a><ul class='dropdown'><li><a href='程式.html'>程式</a><li class='has-children'><a href='圖檔.html'>圖檔</a><ul class='dropdown'><li><a href='四輪車第一版.html'>四輪車第一版</a><li><a href='四輪車第二版.html'>四輪車第二版</a><li><a href='球場.html'>球場</a><li><a href='記分板.html'>記分板</a><li><a href='第一版四輪車+程式運作.html'>第一版四輪車+程式運作</a></li></li></ul></ul><li><a href='group.html'>group</a><li><a href='討論.html'>討論</a></li>
+                     <li><a href='About.html'>About</a><li class='has-children'><a href='pj3.html'>pj3</a><ul class='dropdown'><li class='has-children'><a href='程式.html'>程式</a><ul class='dropdown'><li><a href='車子程式.html'>車子程式</a><li><a href='記分板程式.html'>記分板程式</a></li></ul><li class='has-children'><a href='圖檔.html'>圖檔</a><ul class='dropdown'><li><a href='四輪車第一版.html'>四輪車第一版</a><li><a href='四輪車第二版.html'>四輪車第二版</a><li><a href='球場.html'>球場</a><li><a href='記分板.html'>記分板</a><li><a href='第一版四輪車+程式運作.html'>第一版四輪車+程式運作</a><li><a href='球場加計分板.html'>球場加計分板</a></li></li></ul></ul><li><a href='group.html'>group</a><li><a href='討論.html'>討論</a></li>
                       </ul>
                 </nav>
               </div>
@@ -141,123 +141,8 @@ img.add_border {
           </div>
           
         </header>
-    <div id="tipue_search_content">pj3 << <a href='pj3.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔<br /><h1>程式</h1>
-<p>第一版程式，使用兩邊的速度差來控制方向，且可以在前後的同時控制方向</p>
-<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">from zmqRemoteApi_IPv6 import RemoteAPIClient
-import keyboard
-
-client = RemoteAPIClient('localhost', 23000)
-
-print('Program started')
-sim = client.getObject('sim')
-sim.startSimulation()
-print('Simulation started')
-
-def setWheelMotion(leftSpeed, rightSpeed):
-    # Set target velocity for each wheel
-    frontLeftWheel = sim.getObject('/frontLeftJoint')
-    frontRightWheel = sim.getObject('/frontRightJoint')
-    rearLeftWheel = sim.getObject('/rearLeftJoint')
-    rearRightWheel = sim.getObject('/rearRightJoint')
-    sim.setJointTargetVelocity(frontLeftWheel, leftSpeed)
-    sim.setJointTargetVelocity(frontRightWheel, rightSpeed)
-    sim.setJointTargetVelocity(rearLeftWheel, leftSpeed)
-    sim.setJointTargetVelocity(rearRightWheel, rightSpeed)
-
-# Initialize motion variables
-leftSpeed = 0
-rightSpeed = 0
-
-# Main loop
-while True:
-    # Check keyboard input
-    if keyboard.is_pressed('w'):
-        leftSpeed = -10  # Forward motion
-        rightSpeed = -10  # Forward motion
-    elif keyboard.is_pressed('s'):
-        leftSpeed = 10  # Backward motion
-        rightSpeed = 10  # Backward motion
-    else:
-        leftSpeed = 0
-        rightSpeed = 0
-
-    if keyboard.is_pressed('a'):
-        leftSpeed += 5  # Left turn
-        rightSpeed -= 5  # Left turn
-    elif keyboard.is_pressed('d'):
-        leftSpeed -= 5  # Right turn
-        rightSpeed += 5  # Right turn
-        
-    if keyboard.is_pressed('q'):
-        break  # Quit
-
-    # Set motion for all wheels
-    setWheelMotion(leftSpeed, rightSpeed)
-
-# Stop the simulation
-sim.stopSimulation()
-</pre>
-<p><a href="./../downloads/snail.7z">第一版程式與四輪車</a>，<a href="./../downloads/第一版.7z">第一版程式與四輪車(八份)</a></p>
-<p>第二版程式，前輪各多加一個joint，使其運動更加合理</p>
-<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">from zmqRemoteApi_IPv6 import RemoteAPIClient
-import keyboard
-
-client = RemoteAPIClient('localhost', 23000)
-
-sim = client.getObject('sim')
-
-sim.startSimulation()
-
-frontLeftSteeringJoint = sim.getObject('/frontLeftJoint1')
-frontRightSteeringJoint = sim.getObject('/frontRightJoint1')
-frontLeftWheel = sim.getObject('/frontLeftJoint2')
-frontRightWheel = sim.getObject('/frontRightJoint2')
-rearLeftWheel = sim.getObject('/rearLeftJoint')
-rearRightWheel = sim.getObject('/rearRightJoint')
-
-def setFrontWheelSteeringAngle(steeringAngle):
-    sim.setJointTargetPosition(frontLeftSteeringJoint, steeringAngle)
-    sim.setJointTargetPosition(frontRightSteeringJoint, steeringAngle)
-
-def setAllWheelSpeed(speed):
-    sim.setJointTargetVelocity(frontLeftWheel, speed)
-    sim.setJointTargetVelocity(frontRightWheel, speed)
-    sim.setJointTargetVelocity(rearLeftWheel, speed)
-    sim.setJointTargetVelocity(rearRightWheel, speed)
-
-steeringAngle = 0
-speed = 0
-
-SPEED_FORWARD = -20
-SPEED_BACKWARD = 20
-STEERING_ANGLE_LEFT = 0.3
-STEERING_ANGLE_RIGHT = -0.3
-
-while True:
-    if keyboard.is_pressed('w'):
-        speed = SPEED_FORWARD
-    elif keyboard.is_pressed('s'):
-        speed = SPEED_BACKWARD
-    else:
-        speed = 0
-
-    if keyboard.is_pressed('a'):
-        steeringAngle = STEERING_ANGLE_LEFT
-    elif keyboard.is_pressed('d'):
-        steeringAngle = STEERING_ANGLE_RIGHT
-    else:
-        steeringAngle = 0
-
-    if keyboard.is_pressed('q'):
-        break  
-
-    setFrontWheelSteeringAngle(steeringAngle)
-    
-    setAllWheelSpeed(speed)
-
-sim.stopSimulation()
-</pre>
-<p><a href="./../downloads/Dichoplasma.7z">第二版程式與四輪車</a></p><br />pj3 << <a href='pj3.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔</div>
+    <div id="tipue_search_content">pj3 << <a href='pj3.html'>Previous</a> <a href='車子程式.html'>Next</a> >> 車子程式<br /><h1>程式</h1>
+<br />pj3 << <a href='pj3.html'>Previous</a> <a href='車子程式.html'>Next</a> >> 車子程式</div>
         
     <!-- footer -->
       <div class="container">

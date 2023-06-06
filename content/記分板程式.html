@@ -141,11 +141,67 @@ img.add_border {
           </div>
           
         </header>
-    <div id="tipue_search_content">球場 << <a href='球場.html'>Previous</a> <a href='第一版四輪車+程式運作.html'>Next</a> >> 第一版四輪車+程式運作<br /><h1>記分板</h1>
-<p><a href="./../downloads/mechanical counter.zip">記分板零件和組合圖檔</a></p>
-<p><a href="./../downloads/STL.zip">記分板STL檔</a></p>
-<p><img alt="" height="257" src="./../images/image.png" width="457"/></p>
-<br />球場 << <a href='球場.html'>Previous</a> <a href='第一版四輪車+程式運作.html'>Next</a> >> 第一版四輪車+程式運作</div>
+    <div id="tipue_search_content">車子程式 << <a href='車子程式.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔<br /><h1>記分板程式</h1>
+<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">function sysCall_init()
+    score = 0
+    wheelJoint = sim.getObjectHandle('/joint1g')
+    robot = {
+        sim.getObjectHandle('/car1'),
+        sim.getObjectHandle('/car2'),
+        sim.getObjectHandle('/car3'),
+        sim.getObjectHandle('/car4'),
+        sim.getObjectHandle('/car5'),
+        sim.getObjectHandle('/car6'),
+        sim.getObjectHandle('/car7'),
+        sim.getObjectHandle('/car8')
+    }
+    initialPos = {
+        {-1.050, -0.77134, 0.21},
+        {-1.050, -0.27134, 0.21},
+        {-1.050, 0.22867, 0.21},
+        {-1.050, 0.62866, 0.21},
+        {1.175, -0.77134, 0.21},
+        {1.175, -0.27134, 0.21},
+        {1.175, 0.22867, 0.21},
+        {1.175, 0.62866, 0.21}
+    }
+    initialOri = {
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180}
+    }
+end
+
+sensor = sim.getObject('./sensor')
+initialPosBall = sim.getObjectPosition(sensor, -1)
+ball = sim.getObject('/ball')
+
+function sysCall_actuation()
+    result = sim.readProximitySensor(sensor)
+    if (result &gt; 0) then
+        score = score + 1
+        sim.setObjectPosition(ball, -1, {0,0,0.25})
+        
+        -- Rotate the wheel joint by 36 degrees
+        local currentAngle = sim.getJointPosition(wheelJoint)
+        local targetAngle = currentAngle + math.rad(-36)
+        sim.setJointTargetPosition(wheelJoint, targetAngle)
+        
+        for i = 1, 8 do
+            sim.setObjectPosition(robot[i], -1, initialPos[i])
+            sim.setObjectOrientation(robot[i], -1, initialOri[i])
+        end
+    end
+end
+</pre>
+<p>這個程式控制了球進入球門後，記分板轉動36度，以及車子與球回到初始位置，目前發生未知原因使的5到8的車子在球進入球門後，位置與方向與我所設置的不相符</p>
+<p><a href="./../downloads/race1.7z">球場加計分板</a></p>
+<br />車子程式 << <a href='車子程式.html'>Previous</a> <a href='圖檔.html'>Next</a> >> 圖檔</div>
         
     <!-- footer -->
       <div class="container">
