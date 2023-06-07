@@ -1,0 +1,178 @@
+﻿\chapter{code}
+\section{code\_car}
+第一版程式，使用兩邊的速度差來控制方向，且可以在前後的同時控制方向\\
+\begin{lstlisting}[language=Python, frame=single, numbers=left, captionpos=b, basicstyle=\ttfamily\small, showstringspaces=false, breaklines=true, tabsize=4, xleftmargin=15pt]
+from zmqRemoteApi_IPv6 import RemoteAPIClient
+import keyboard
+ 
+client = RemoteAPIClient('localhost', 23000)
+ 
+print('Program started')
+sim = client.getObject('sim')
+sim.startSimulation()
+print('Simulation started')
+ 
+def setWheelMotion(leftSpeed, rightSpeed):
+    # Set target velocity for each wheel
+    frontLeftWheel = sim.getObject('/frontLeftJoint')
+    frontRightWheel = sim.getObject('/frontRightJoint')
+    rearLeftWheel = sim.getObject('/rearLeftJoint')
+    rearRightWheel = sim.getObject('/rearRightJoint')
+    sim.setJointTargetVelocity(frontLeftWheel, leftSpeed)
+    sim.setJointTargetVelocity(frontRightWheel, rightSpeed)
+    sim.setJointTargetVelocity(rearLeftWheel, leftSpeed)
+    sim.setJointTargetVelocity(rearRightWheel, rightSpeed)
+ 
+# Initialize motion variables
+leftSpeed = 0
+rightSpeed = 0
+ 
+# Main loop
+while True:
+    # Check keyboard input
+    if keyboard.is_pressed('w'):
+        leftSpeed = -10  # Forward motion
+        rightSpeed = -10  # Forward motion
+    elif keyboard.is_pressed('s'):
+        leftSpeed = 10  # Backward motion
+        rightSpeed = 10  # Backward motion
+    else:
+        leftSpeed = 0
+        rightSpeed = 0
+ 
+    if keyboard.is_pressed('a'):
+        leftSpeed += 5  # Left turn
+        rightSpeed -= 5  # Left turn
+    elif keyboard.is_pressed('d'):
+        leftSpeed -= 5  # Right turn
+        rightSpeed += 5  # Right turn
+         
+    if keyboard.is_pressed('q'):
+        break  # Quit
+ 
+    # Set motion for all wheels
+    setWheelMotion(leftSpeed, rightSpeed)
+ 
+# Stop the simulation
+sim.stopSimulation()
+\end{lstlisting}
+第二版程式，前輪各多加一個joint，使其運動更加合理\\
+\begin{lstlisting}[language=Python, frame=single, numbers=left, captionpos=b, basicstyle=\ttfamily\small, showstringspaces=false, breaklines=true, tabsize=4, xleftmargin=15pt]
+from zmqRemoteApi_IPv6 import RemoteAPIClient
+import keyboard
+ 
+client = RemoteAPIClient('localhost', 23000)
+ 
+sim = client.getObject('sim')
+ 
+sim.startSimulation()
+ 
+frontLeftSteeringJoint = sim.getObject('/frontLeftJoint1')
+frontRightSteeringJoint = sim.getObject('/frontRightJoint1')
+frontLeftWheel = sim.getObject('/frontLeftJoint2')
+frontRightWheel = sim.getObject('/frontRightJoint2')
+rearLeftWheel = sim.getObject('/rearLeftJoint')
+rearRightWheel = sim.getObject('/rearRightJoint')
+ 
+def setFrontWheelSteeringAngle(steeringAngle):
+    sim.setJointTargetPosition(frontLeftSteeringJoint, steeringAngle)
+    sim.setJointTargetPosition(frontRightSteeringJoint, steeringAngle)
+ 
+def setAllWheelSpeed(speed):
+    sim.setJointTargetVelocity(frontLeftWheel, speed)
+    sim.setJointTargetVelocity(frontRightWheel, speed)
+    sim.setJointTargetVelocity(rearLeftWheel, speed)
+    sim.setJointTargetVelocity(rearRightWheel, speed)
+ 
+steeringAngle = 0
+speed = 0
+ 
+SPEED_FORWARD = -20
+SPEED_BACKWARD = 20
+STEERING_ANGLE_LEFT = 0.3
+STEERING_ANGLE_RIGHT = -0.3
+ 
+while True:
+    if keyboard.is_pressed('w'):
+        speed = SPEED_FORWARD
+    elif keyboard.is_pressed('s'):
+        speed = SPEED_BACKWARD
+    else:
+        speed = 0
+ 
+    if keyboard.is_pressed('a'):
+        steeringAngle = STEERING_ANGLE_LEFT
+    elif keyboard.is_pressed('d'):
+        steeringAngle = STEERING_ANGLE_RIGHT
+    else:
+        steeringAngle = 0
+ 
+    if keyboard.is_pressed('q'):
+        break 
+ 
+    setFrontWheelSteeringAngle(steeringAngle)
+     
+    setAllWheelSpeed(speed)
+ 
+sim.stopSimulation()
+\end{lstlisting}
+\section{code\_scoreboard}
+\begin{lstlisting}[language=Python, frame=single, numbers=left, captionpos=b, basicstyle=\ttfamily\small, showstringspaces=false, breaklines=true, tabsize=4, xleftmargin=15pt]
+function sysCall_init()
+    score = 0
+    wheelJoint = sim.getObjectHandle('/joint1g')
+    robot = {
+        sim.getObjectHandle('/car1'),
+        sim.getObjectHandle('/car2'),
+        sim.getObjectHandle('/car3'),
+        sim.getObjectHandle('/car4'),
+        sim.getObjectHandle('/car5'),
+        sim.getObjectHandle('/car6'),
+        sim.getObjectHandle('/car7'),
+        sim.getObjectHandle('/car8')
+    }
+    initialPos = {
+        {-1.050, -0.77134, 0.21},
+        {-1.050, -0.27134, 0.21},
+        {-1.050, 0.22867, 0.21},
+        {-1.050, 0.62866, 0.21},
+        {1.175, -0.77134, 0.21},
+        {1.175, -0.27134, 0.21},
+        {1.175, 0.22867, 0.21},
+        {1.175, 0.62866, 0.21}
+    }
+    initialOri = {
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180}
+    }
+end
+ 
+sensor = sim.getObject('./sensor')
+initialPosBall = sim.getObjectPosition(sensor, -1)
+ball = sim.getObject('/ball')
+ 
+function sysCall_actuation()
+    result = sim.readProximitySensor(sensor)
+    if (result > 0) then
+        score = score + 1
+        sim.setObjectPosition(ball, -1, {0,0,0.25})
+         
+        -- Rotate the wheel joint by 36 degrees
+        local currentAngle = sim.getJointPosition(wheelJoint)
+        local targetAngle = currentAngle + math.rad(-36)
+        sim.setJointTargetPosition(wheelJoint, targetAngle)
+         
+        for i = 1, 8 do
+            sim.setObjectPosition(robot[i], -1, initialPos[i])
+            sim.setObjectOrientation(robot[i], -1, initialOri[i])
+        end
+    end
+end
+\end{lstlisting}
+這個程式控制了球進入球門後，記分板轉動36度，以及車子與球回到初始位置，目前發生未知原因使的5到8的車子在球進入球門後，位置與方向與我所設置的不相符\\
