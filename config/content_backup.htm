@@ -281,7 +281,170 @@ end
 </pre>
 <p>這個程式控制了球進入球門後，記分板轉動36度，以及車子與球回到初始位置，目前發生未知原因使的5到8的車子在球進入球門後，位置與方向與我所設置的不相符</p>
 <p><a href="/downloads/race1.7z">球場加計分板</a></p>
-<h2>圖檔</h2>
+<h3>得分球員版</h3>
+<p>將進球後顯示goal加入記分板程式中</p>
+<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">function sysCall_init()
+    score = 0
+    wheelJoint = sim.getObjectHandle('/joint1g')
+    robot = {
+        sim.getObjectHandle('/car1'),
+        sim.getObjectHandle('/car2'),
+        sim.getObjectHandle('/car3'),
+        sim.getObjectHandle('/car4'),
+        sim.getObjectHandle('/car5'),
+        sim.getObjectHandle('/car6'),
+        sim.getObjectHandle('/car7'),
+        sim.getObjectHandle('/car8')
+    }
+    initialPos = {
+        {-1.050, -0.77134, 0.21},
+        {-1.050, -0.27134, 0.21},
+        {-1.050, 0.22867, 0.21},
+        {-1.050, 0.62866, 0.21},
+        {1.175, -0.77134, 0.21},
+        {1.175, -0.27134, 0.21},
+        {1.175, 0.22867, 0.21},
+        {1.175, 0.62866, 0.21}
+    }
+    initialOri = {
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, 90, 0},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180},
+        {0, -90, 180}
+    }
+    displayHandles = {
+        sim.getObjectHandle('/display1'),
+        sim.getObjectHandle('/display2'),
+        sim.getObjectHandle('/display3'),
+        sim.getObjectHandle('/display4'),
+        sim.getObjectHandle('/display5'),
+        sim.getObjectHandle('/display6'),
+        sim.getObjectHandle('/display7')
+    }
+    displayParameters = {
+        {0, 0, 1, 0, 0, 1, 0},
+        {1, 0, 1, 1, 1, 0, 1},
+        {1, 0, 1, 1, 0, 1, 1},
+        {0, 1, 1, 1, 0, 1, 0},
+        {1, 1, 0, 1, 0, 1, 1},
+        {1, 1, 0, 1, 1, 1, 1},
+        {1, 0, 1, 0, 0, 1, 0},
+        {1, 1, 1, 1, 1, 1, 1}
+    }
+    goalEffectEnabled = false
+    lastGoalPlayer = nil
+    flashingState = false
+    flashingTimer = 0
+    goalHandle = sim.getObjectHandle('/goal')
+    flashingDuration = 0.5
+    flashingTimer = 0 
+    isFlashing = false
+end
+
+sensor = sim.getObject('./sensor')
+initialPosBall = sim.getObjectPosition(sensor, -1)
+ball = sim.getObject('/ball')
+
+function sysCall_actuation()
+    result = sim.readProximitySensor(sensor)
+    if (result &gt; 0) then
+        score = score + 1
+        sim.setObjectPosition(ball, -1, {0,0,0.25})
+        
+        -- Rotate the wheel joint by 36 degrees
+        local currentAngle = sim.getJointPosition(wheelJoint)
+        local targetAngle = currentAngle + math.rad(-36)
+        sim.setJointTargetPosition(wheelJoint, targetAngle)
+        
+        for i = 1, 8 do
+            sim.setObjectPosition(robot[i], -1, initialPos[i])
+            sim.setObjectOrientation(robot[i], -1, initialOri[i])
+        end
+        
+        goalEffectEnabled = true
+        lastGoalPlayer = result
+        flashingState = false
+        flashingTimer = 0
+    end
+    
+    if goalEffectEnabled then
+        if not isFlashing then
+            flashingTimer = flashingTimer + sim.getSimulationTimeStep()
+            if flashingTimer &gt;= flashingDuration then
+                isFlashing = true
+                sim.setShapeColor(goalHandle, nil, sim.colorcomponent_ambient_diffuse, {1, 0.9, 0})
+            end
+        elseif isFlashing then
+            flashingTimer = flashingTimer + sim.getSimulationTimeStep()
+            if flashingTimer &gt;= flashingDuration + 3 then
+                goalEffectEnabled = false
+                isFlashing = false
+                sim.setShapeColor(goalHandle, nil, sim.colorcomponent_ambient_diffuse, {0, 0, 0})
+            end
+        end
+    end
+end
+
+function sysCall_cleanup()
+    sim.setShapeColor(goalHandle, nil, sim.colorcomponent_ambient_diffuse,{0, 0, 0})
+end</pre>
+<p></p>
+<p>檢測與球碰撞的球員並顯示其背號在七段顯示器中</p>
+<pre class="brush:py;auto-links:false;toolbar:false" contenteditable="false">local robotHandles = {}
+local ballHandle = -1
+local displayHandles = {}
+local displayParameters = {
+    {0, 0, 1, 0, 0, 1, 0},
+    {1, 0, 1, 1, 1, 0, 1},
+    {1, 0, 1, 1, 0, 1, 1},
+    {0, 1, 1, 1, 0, 1, 0},
+    {1, 1, 0, 1, 0, 1, 1},
+    {1, 1, 0, 1, 1, 1, 1},
+    {1, 0, 1, 0, 0, 1, 0},
+    {1, 1, 1, 1, 1, 1, 1}
+}
+
+function sysCall_init()
+    for i = 1, 8 do
+        robotHandles[i] = sim.getObjectHandle('car' .. i)
+    end
+    ballHandle = sim.getObjectHandle('ball')
+
+    for i = 1, 7 do
+        displayHandles[i] = sim.getObjectHandle('/display' .. i)
+    end
+end
+
+function sysCall_actuation()
+    for i = 1, 8 do
+        local collision = sim.checkCollision(robotHandles[i], ballHandle)
+        if collision ~= 0 then
+            setDisplayDigit(i, i &lt;= 4)
+            break
+        end
+    end
+end
+
+function setDisplayDigit(digit, isRed)
+    for i = 1, 7 do
+        if displayParameters[digit][i] == 1 then
+            if isRed then
+                sim.setShapeColor(displayHandles[i], nil, sim.colorcomponent_ambient_diffuse, {1, 0, 0})
+            else
+                sim.setShapeColor(displayHandles[i], nil, sim.colorcomponent_ambient_diffuse, {0, 1, 0})
+            end
+        else
+            sim.setShapeColor(displayHandles[i], nil, sim.colorcomponent_ambient_diffuse, {0, 0, 0})
+        end
+    end
+end
+
+</pre>
+<p><a href="/downloads/race2.7z">球場加計分板加進球球員版</a></p><h2>圖檔</h2>
 <h3>四輪車第一版</h3>
 <p><a href="https://cad.onshape.com/documents/4f821302ed0bb2bdd5770f51/w/d6ec8767dc85798522c3788f/e/4513ebb2faaa290580d3a7d2?renderMode=0&amp;uiState=646e205860d2d00ecdd743e3">41023232機器人</a></p>
 <p><img alt="" height="254" src="/images/Desktop Screenshot 2023.05.24 - 23.10.59.71.png" width="452"/></p>
@@ -337,7 +500,11 @@ end
 <h3>球場加計分板</h3>
 <p><img alt="" height="853" src="/images/1686062154829.jpg" width="1023"/></p>
 <p><a href="/downloads/race1.7z">球場加計分板</a></p>
-<h1>group</h1>
+<p></p>
+<h3>計分球員版</h3>
+<p><a href="https://cad.onshape.com/documents/7f8cc7d87e17039a7e4cd96e/w/0a9c2746d26fa72805722cff/e/4a51186d4357be7d12162be4?renderMode=0&amp;uiState=6489a78c23b96a3814a2cbc0">計分球員版</a></p>
+<p><img caption="false" height="379" src="/images/得分球員版.jpg" width="500"/></p>
+<p></p><h1>group</h1>
 <div>41023226:<a href="https://github.com/mdecd2023/resume-41023226">resume</a>, <a href="https://mdecd2023.github.io/football-bpj1">football</a> (<a href="https://github.com/mdecd2023/football-bpj1">repo</a>), <a href="https://mdecd2023.github.io/2b-pj1bg15/">pj1</a> (<a href="https://github.com/mdecd2023/2b-pj1bg15">repo</a>), <a href="https://mdecd2023.github.io/2b2-pj2bg6/">pj2</a> (<a href="https://github.com/mdecd2023/2b2-pj2bg6">repo</a>), <a href="https://mdecd2023.github.io/2b3-pj3bg3/">pj3</a> (<a href="https://github.com/mdecd2023/2b3-pj3bg3">repo</a>)</div>
 <div>41023233:<a href="https://github.com/mdecd2023/resume-Anguss676">resume</a>, <a href="https://mdecd2023.github.io/football-bpj1">football</a> (<a href="https://github.com/mdecd2023/football-bpj1">repo</a>), <a href="https://mdecd2023.github.io/2b-pj1bg15/">pj1</a> (<a href="https://github.com/mdecd2023/2b-pj1bg15">repo</a>), <a href="https://mdecd2023.github.io/2b2-pj2bg6/">pj2</a> (<a href="https://github.com/mdecd2023/2b-pj1bg15">repo</a>), <a href="https://mdecd2023.github.io/2b3-pj3bg3/">pj3</a> (<a href="https://github.com/Anguss676/2b3-pj3bg3">repo</a>)</div>
 <div>41023220:<a href="https://github.com/mdecd2023/resume-41023220">resume</a>, <a href="https://mdecd2023.github.io/football-bpj1/">football</a> (<a href="https://github.com/mdecd2023/football-bpj1">repo</a>), <a href="https://mdecd2023.github.io/2b-pj1bg14/content/index.html">pj1</a> (<a href="https://github.com/mdecd2023/2b-pj1bg14">repo</a>), <a href="https://mdecd2023.github.io/2b2-pj2bg6/">pj2</a> (<a href="https://github.com/mdecd2023/2b2-pj2bg6">repo</a>), <a href="https://mdecd2023.github.io/2b3-pj3bg3/">pj3</a> (<a href="https://github.com/mdecd2023/2b3-pj3bg3">repo</a>)</div>
@@ -485,5 +652,8 @@ doc["add1to100"].bind('click', add)
 <p>5/24討論內容: 將記分板設計跟場地出來 並對第一版車子做修改</p>
 <p></p>
 <h1>報告</h1>
+<p><a href="/downloads/cd_report.pdf">pdf</a></p>
+<p>尚未解決排版問題</p>
+<p><a href="/downloads/協同設計 - 機器人踢足球.pptx">ppt</a></p>
 <p></p>
 <p></p>
